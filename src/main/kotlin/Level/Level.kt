@@ -1,6 +1,6 @@
 package Level
 
-class Level(private val light : Light) {
+class Level(private val light : Light, public val entrance : Int) {
 	fun getLightSwitchPosition() : Int {
 		return light.switch
 	}

@@ -3,6 +3,8 @@ package Level
 import engine.OpenGL.Texture
 import engine.OpenGL.VAO
 import org.joml.Matrix4f
+import org.joml.Vector4f
+import kotlin.properties.Delegates
 
 const val LEVEL_WIDTH = 10
 const val LEVEL_MAX_INDEX = LEVEL_WIDTH - 1
@@ -31,6 +33,9 @@ class LevelRenderer(private val baseMat : Matrix4f) {
 	private fun renderCeiling(level : Level, depth : Int) {
 		//floor textures
 		for (x in 0..LEVEL_MAX_INDEX) {
+			if (level.entrance == x) {
+				continue;
+			}
 			if (level.getLightPosition() > level.getLightSwitchPosition()) {
 				if (x == level.getLightPosition()) {
 					floorFromLeftTex.bind()
@@ -84,10 +89,44 @@ class LevelRenderer(private val baseMat : Matrix4f) {
 		Shaders.light.enable()
 		val mat = baseMat
 			.translate(8 * (level.getLightPosition() - LEVEL_WIDTH / 2f) + 4, -2.5f, 0f, Matrix4f())
-			.scale(8f * level.getLightBrightness())
+			.scale(16f * level.getLightBrightness())
 			.translate(-0.5f, -0.5f, 0f)
 		Shaders.light.setUniform(0, 0, mat)
 		Shaders.light.setUniform(2, 0, 1f, 1f, 1f)
+
+		val lines = getLines(level)
+		Shaders.light.setUniform(2, 1, lines.size)
+		Shaders.light.setUniform(2, 2, lines)
 		vao.draw()
+	}
+
+	private fun getLeftCeilingLine(level : Level) : Vector4f {
+		val lx = -1f
+		val yl = -5f / (16f * level.getLightBrightness())
+		val rx = (level.entrance - level.getLightPosition() - 0.5f) / level.getLightBrightness()
+		return Vector4f(lx, yl, rx, yl)
+	}
+
+	private fun getRightCeilingLine(level : Level) : Vector4f {
+		val lx = (level.entrance - level.getLightPosition() + 0.5f) / level.getLightBrightness()
+		val yl = -5f / (16f * level.getLightBrightness())
+		val rx = 1f
+		return Vector4f(lx, yl, rx, yl)
+	}
+
+	private fun getHorizontalLine(level : Level) : Vector4f {
+		var xv : Float
+		val ly = -5f / (16f * level.getLightBrightness())
+		val hy = -9f / (16f * level.getLightBrightness())
+		if (level.entrance > level.getLightPosition()) {
+			xv = (level.entrance - level.getLightPosition() + 0.5f) / level.getLightBrightness()
+		} else {
+			xv = (level.entrance - level.getLightPosition() - 0.5f) / level.getLightBrightness()
+		}
+		return Vector4f(xv, ly, xv, hy)
+	}
+
+	private fun getLines(level : Level) : Array<Vector4f> {
+		return arrayOf(getLeftCeilingLine(level), getRightCeilingLine(level), getHorizontalLine(level))
 	}
 }

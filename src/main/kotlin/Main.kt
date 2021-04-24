@@ -24,7 +24,7 @@ class Main(window: EnigWindow) : EnigView(window) {
 	private val shader = ShaderProgram("textureShader")
 	private val texture = Texture("floor0.png")
 
-	private var currentLevel = Level(Light(2, 5));
+	private var currentLevel = Level(Light(4, 5), 3);
 
 	private val levelRenderer  = LevelRenderer(window.getSquarePerspectiveMatrix(100f))
 
