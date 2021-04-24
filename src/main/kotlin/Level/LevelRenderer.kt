@@ -20,9 +20,11 @@ class LevelRenderer(private val baseMat : Matrix4f) {
 
 	fun renderLevel(level : Level, depth : Int) {
 		vao.prepareRender()
+		renderLight(level, depth)
+		vao.unbind()
 		Shaders.texture.enable()
+		vao.prepareRender()
 		renderCeiling(level, depth)
-
 		vao.unbind()
 	}
 
@@ -78,7 +80,14 @@ class LevelRenderer(private val baseMat : Matrix4f) {
 		vao.draw()
 	}
 
-	private fun renderLight() {
-
+	private fun renderLight(level : Level, depth : Int) {
+		Shaders.light.enable()
+		val mat = baseMat
+			.translate(8 * (level.getLightPosition() - LEVEL_WIDTH / 2f) + 4, -2.5f, 0f, Matrix4f())
+			.scale(8f * level.getLightBrightness())
+			.translate(-0.5f, -0.5f, 0f)
+		Shaders.light.setUniform(0, 0, mat)
+		Shaders.light.setUniform(2, 0, 1f, 1f, 1f)
+		vao.draw()
 	}
 }
