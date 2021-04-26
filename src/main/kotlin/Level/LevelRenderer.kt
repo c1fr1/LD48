@@ -29,13 +29,23 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 
 	private val lightFBO : FBO = FBO(window.width, window.height)
 
-	fun renderLevel(levels : Array<Level>, player: Vector2f) {
-		//baseMat.translate(0f, 0.1f, 0f)
+	private var depth = 0f
+
+	fun renderLevel(levels : ArrayList<Level>, player: Vector2f) {
+
+		if (player.y - depth > 4.5f) {
+			val offset = player.y - depth - 4.5f
+			baseMat.translate(0f, offset * 8, 0f)
+			depth += offset
+		}
+
 		lightFBO.prepareForTexture()
 		renderLight(levels, player)
 		FBO.prepareDefaultRender()
 		Shaders.doubleTex.enable()
-		lightFBO.boundTexture.bindPosition(1);
+		Shaders.doubleTex.setUniform(2, 0, lightFBO.boundTexture.width.toFloat())
+		Shaders.doubleTex.setUniform(2, 1, lightFBO.boundTexture.height.toFloat())
+		lightFBO.boundTexture.bindPosition(1)
 		vao.prepareRender()
 		renderWalls(levels)
 		renderCeiling(levels)
@@ -60,10 +70,8 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 		timer += 0.1f;
 	}
 
-	private fun renderWalls(levels : Array<Level>) {
+	private fun renderWalls(levels : ArrayList<Level>) {
 		floorTex.bindPosition(0)
-		Shaders.doubleTex.setUniform(2, 0, lightFBO.boundTexture.width.toFloat())
-		Shaders.doubleTex.setUniform(2, 1, lightFBO.boundTexture.height.toFloat())
 		for (x in 0..LEVEL_MAX_INDEX) {
 			for (h in 1..(levels.size * 2)) {
 				val mat = baseMat
@@ -75,7 +83,7 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 		}
 	}
 
-	private fun renderCeiling(levels : Array<Level>) {
+	private fun renderCeiling(levels : ArrayList<Level>) {
 		//floor textures
 		for ((level, i) in levels.zip(levels.indices)) {
 			for (x in 0..LEVEL_MAX_INDEX) {
@@ -136,7 +144,7 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 		}
 	}
 
-	private fun renderLight(levels : Array<Level>, player : Vector2f) {
+	private fun renderLight(levels : ArrayList<Level>, player : Vector2f) {
 		glBlendEquation(GL14.GL_MAX)
 		Shaders.light.enable()
 		Shaders.light.setUniform(2, 0, 1f, 1f, 0.5f)
@@ -154,6 +162,15 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 				vao.draw()
 			}
 		}
+		val mat = baseMat
+			.translate(8f * (player.x - LEVEL_WIDTH / 2f) + 2f, 5 - 8f * player.y + sin(timer / 3f).toFloat() / 2f + 2f, 0f, Matrix4f())
+			.scale(10f)
+			.translate(-0.5f, -0.5f, 0f)
+		Shaders.light.setUniform(0, 0, mat)
+
+		Shaders.light.setUniform(2, 1, 0)
+		vao.draw()
+
 		glBlendEquation(GL14.GL_FUNC_ADD)
 	}
 
@@ -211,7 +228,17 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 		return Vector4f(xv, ly, xv, hy)
 	}
 
-	private fun getLines(levels : Array<Level>, i : Int) : Array<Vector4f> {
+	private fun getMinimumLine(light : Light) : Vector4f {
+		val yl = (-4.5f + 32f) / (8f * light.brightness)
+		return Vector4f(-1f, yl, 1f, yl)
+	}
+
+	private fun getMaximumLine(light : Light) : Vector4f {
+		val yl = (-2.5f - 16f) / (8f * light.brightness)
+		return Vector4f(-1f, yl, 1f, yl)
+	}
+
+	private fun getLines(levels : ArrayList<Level>, i : Int) : Array<Vector4f> {
 		val level = levels[i]
 		val ret = arrayListOf(getLeftCeilingLine(level), getRightCeilingLine(level), getHorizontalLine(level))
 		if (levels.size > i + 1) {
@@ -229,6 +256,9 @@ class LevelRenderer(private val baseMat : Matrix4f, window: EnigWindow) {
 			val yl = (-4.5f + 16f) / (8f * level.getLightBrightness())
 			ret.add(Vector4f(-1f, yl, 1f, yl))
 		}
+
+		ret.add(getMinimumLine(level.light))
+		ret.add(getMaximumLine(level.light))
 
 		return ret.toTypedArray()
 	}

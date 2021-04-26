@@ -1,6 +1,7 @@
 import Level.*
 import engine.EnigView
 import engine.OpenGL.*
+import org.joml.Math.random
 import org.joml.Vector2f
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.opengl.GL14.*
@@ -25,7 +26,7 @@ class Main(window: EnigWindow) : EnigView(window) {
 	private val shader = ShaderProgram("textureShader")
 	private val texture = Texture("floor0.png")
 
-	private var levels = arrayOf(Level(Light(4, 5), 3), Level(Light(5, 7), 6), Level(Light(5, 9), 6))
+	private var levels = arrayListOf(randomLevel(), randomLevel(), randomLevel(), randomLevel())
 
 	private val levelRenderer  = LevelRenderer(window.getSquarePerspectiveMatrix(100f), window)
 
@@ -53,8 +54,8 @@ class Main(window: EnigWindow) : EnigView(window) {
 		if (index < 0) {
 			index = 0
 		}
-		if (index >= levels.size) {
-			index = levels.size - 1;
+		if (index + 2 >= levels.size) {
+			addLevel()
 		}
 		val levelRelativePos = Vector2f(player)
 		levelRelativePos.y -= index * 2f
@@ -125,8 +126,23 @@ class Main(window: EnigWindow) : EnigView(window) {
 			if (window.keys[GLFW_KEY_E] == 1) {
 				levels[levelI].light.state = !levels[levelI].light.state
 			}
-		}else {
-			println(abs(switchLoc - player.x))
 		}
+	}
+
+	fun addLevel() {
+		levels.add(randomLevel())
+	}
+
+	fun randomLevel() : Level {
+		val lightPos = (random() * LEVEL_WIDTH).toInt()
+		var switchPos = (random() * LEVEL_WIDTH).toInt()
+		while (switchPos == lightPos) {
+			switchPos = (random() * LEVEL_WIDTH).toInt()
+		}
+		var entrancePos = (random() * LEVEL_WIDTH).toInt()
+		while (entrancePos == lightPos) {
+			entrancePos = (random() * LEVEL_WIDTH).toInt()
+		}
+		return Level(Light(lightPos, switchPos), entrancePos)
 	}
 }
