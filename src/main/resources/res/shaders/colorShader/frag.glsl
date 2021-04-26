@@ -22,7 +22,22 @@ float crossesT(vec2 a, vec2 b, vec2 v) {
 }
 
 float crossesT(vec2 a, vec2 b, vec2 v, vec2 o) {
-    return crossesT(a - o, b - o, v - o);
+    //return crossesT(a - o, b - o, v - o);
+    float bax = b.x - a.x;
+    float bay = b.y - a.y;
+
+    float aox = a.x - o.x;
+    float boy = b.y - o.y;
+
+    float box = b.x - o.x;
+    float aoy = a.y - o.y;
+
+    float vox = v.x - o.x;
+    float voy = v.y - o.y;
+
+    float above = aox * boy - box * aoy;
+    float below = vox * bay - voy * bax;
+    return above / below;
 }
 
 float crossesTOrigin(vec2 v, vec2 from, vec2 to) {
@@ -40,5 +55,5 @@ void main() {
         }
     }
     float len = dot(pos, pos);
-    color = vec4(ocolor * (1 - len), 1 - len);
+    color = vec4(ocolor, 1 - len);
 }
